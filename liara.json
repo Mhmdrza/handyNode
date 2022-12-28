@@ -1,0 +1,5 @@
+{
+    "app": "handy",
+    "platform": "node",
+    "port": 8080
+}
