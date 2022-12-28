@@ -39,9 +39,13 @@ app.get('/', (req, res) => {
     `)
 })
 app.post('/upload', upload.single('file'), (req, res) => {
-    const normalizedName = req.file.originalname.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const splittedName = req.file.originalname.split('.');
     const fileExtention = splittedName[splittedName.length - 1];
+    const normalizedName = req.file.originalname
+    .replace(/[^a-z0-9]/gi, '_')
+    .replace(/[_]+/g,'_')
+    .replace(fileExtention,'')
+    .toLowerCase();
     const id = `${normalizedName}-${Date.now().toString()}.${fileExtention}`;
     fs.writeFileSync(`/tmp/${id}`, req.file.buffer);
     res.redirect('back');
