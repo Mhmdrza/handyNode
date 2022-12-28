@@ -10,9 +10,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
     const downloads = fs.readdirSync('/tmp').map(fileName => `<li>
-    <a href='/download/${fileName}' download>${fileName}</a>
-    <a href='/delete/${fileName}'> x</a>
-    </li>`)
+        <a href='/download/${fileName}' download>${fileName}</a>
+        <a href='/delete/${fileName}'> x</a>
+    </li>`);
+
     res.send(`
         <!DOCTYPE html>
         <html lang="en">
@@ -38,6 +39,7 @@ app.get('/', (req, res) => {
         </html>
     `)
 })
+
 app.post('/upload', upload.single('file'), (req, res) => {
     const splittedName = req.file.originalname.split('.');
     const fileExtention = splittedName[splittedName.length - 1];
@@ -46,14 +48,13 @@ app.post('/upload', upload.single('file'), (req, res) => {
     .replace(/[_]+/g,'_')
     .replace(fileExtention,'')
     .toLowerCase();
-    const id = `${normalizedName}-${Date.now().toString()}.${fileExtention}`;
+    const id = `${normalizedName}${Date.now().toString()}.${fileExtention}`;
     fs.writeFileSync(`/tmp/${id}`, req.file.buffer);
     res.redirect('back');
 })
 
 app.get('/download/:path', (req, res) => {
     const { path } = req.params;
-    console.log({path})
     if (!path) {
         res.status(400).json({ name: 'wrong' })
     } else {
