@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
     const downloads = fs.readdirSync('/tmp').map(fileName => `<li>
-    <a href='/download/${fileName}'>${fileName}</a>
+    <a href='/download/${fileName}' download>${fileName}</a>
     <a href='/delete/${fileName}'> x</a>
     </li>`)
     res.send(`
@@ -26,8 +26,8 @@ app.get('/', (req, res) => {
             </head>
             <body class='flex flex-column aic'>
                 <h1>Upload file</h1>
-                <form action='/upload' method='post' enctype='multipart/form-data' class='mx-auto'>
-                    <input type='file' name='file' />
+                <form action='/upload' method='post' enctype='multipart/form-data' class=''>
+                    <input type='file' name='file' required />
                     <button type='submit'>upload</button>
                 </form>
                 <h2>Files on server:</h2>
@@ -39,13 +39,17 @@ app.get('/', (req, res) => {
     `)
 })
 app.post('/upload', upload.single('file'), (req, res) => {
-    const id = Date.now().toString() + '.' + req.file.originalname;
+    const normalizedName = req.file.originalname.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const splittedName = req.file.originalname.split('.');
+    const fileExtention = splittedName[splittedName.length - 1];
+    const id = `${normalizedName}-${Date.now().toString()}.${fileExtention}`;
     fs.writeFileSync(`/tmp/${id}`, req.file.buffer);
     res.redirect('back');
 })
 
 app.get('/download/:path', (req, res) => {
     const { path } = req.params;
+    console.log({path})
     if (!path) {
         res.status(400).json({ name: 'wrong' })
     } else {
@@ -61,6 +65,13 @@ app.get('/delete/:path', (req, res) => {
         fs.rmSync(`/tmp/${path}`)
         res.redirect('back');
     }
+})
+
+app.get('/reset', (req, res) => {
+    fs.readdirSync('/tmp').map(fileName => {
+        fs.rmSync(`/tmp/${fileName}`)
+    })
+    res.send('all files deleted');
 })
 
 app.listen(port, () => {
