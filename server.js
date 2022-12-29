@@ -18,11 +18,29 @@ app.get('/', (req, res) => {
         <!DOCTYPE html>
         <html lang="en">
             <head>
+                <script>
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        // dark mode
+                        document.documentElement.style.setProperty('--white', '#eee');
+                        document.documentElement.style.setProperty('--black', '#222');
+                    } else {
+                        document.documentElement.style.setProperty('--black', '#eee');
+                        document.documentElement.style.setProperty('--white', '#222');
+                    }
+                </script>
                 <style>
                     .flex {display: flex}
                     .flex-column {flex-direction: column}
                     .aic {align-items: center}
                     .mx-auto {margin-right: auto; margin-left: auto}
+                    body {
+                        background-color: var(--black) !important;
+                        color: var(--white);
+                        font-family: Vazirmatn;
+                    }
+                    a {
+                        color: var(--white) !important;
+                    }
                 </style>
             </head>
             <body class='flex flex-column aic'>
