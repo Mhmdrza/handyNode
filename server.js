@@ -9,53 +9,16 @@ app.use(express.urlencoded({ extended: true }));
 
 
 app.get('/', (req, res) => {
+    res.sendFile('./index.html', {root: __dirname })
+})
+
+app.get('/file', (req, res) => {
     const downloads = fs.readdirSync('/tmp').map(fileName => `<li>
         <a href='/download/${fileName}' download>${fileName}</a>
         <a href='/delete/${fileName}'> x</a>
     </li>`);
-
-    res.send(`
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <script>
-                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                        // dark mode
-                        document.documentElement.style.setProperty('--white', '#eee');
-                        document.documentElement.style.setProperty('--black', '#222');
-                    } else {
-                        document.documentElement.style.setProperty('--black', '#eee');
-                        document.documentElement.style.setProperty('--white', '#222');
-                    }
-                </script>
-                <style>
-                    .flex {display: flex}
-                    .flex-column {flex-direction: column}
-                    .aic {align-items: center}
-                    .mx-auto {margin-right: auto; margin-left: auto}
-                    body {
-                        background-color: var(--black) !important;
-                        color: var(--white);
-                        font-family: Vazirmatn;
-                    }
-                    a {
-                        color: var(--white) !important;
-                    }
-                </style>
-            </head>
-            <body class='flex flex-column aic'>
-                <h1>Upload file</h1>
-                <form action='/upload' method='post' enctype='multipart/form-data' class=''>
-                    <input type='file' name='file' required />
-                    <button type='submit'>upload</button>
-                </form>
-                <h2>Files on server:</h2>
-                <ul>
-                    ${downloads}
-                </ul>
-            </body>
-        </html>
-    `)
+    const str = fs.readFileSync('./file.html').toString();
+    res.send(str.replace('&&&DOWNLOADS&&&', downloads))
 })
 
 app.post('/upload', upload.single('file'), (req, res) => {

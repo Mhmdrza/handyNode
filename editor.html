@@ -10,15 +10,17 @@
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 // dark mode
                 document.documentElement.style.setProperty('--white', '#eee');
-                document.documentElement.style.setProperty('--black', '#333');
+                document.documentElement.style.setProperty('--black', '#222');
             } else {
                 document.documentElement.style.setProperty('--black', '#eee');
-                document.documentElement.style.setProperty('--white', '#333');
+                document.documentElement.style.setProperty('--white', '#222');
             }
         </script>
         <style>
             #container {
-                width: 1000px;
+                width: 90%;
+                min-width: 400px;
+                max-width: 1200px;
                 margin: 20px auto;
             }
             body {
@@ -38,7 +40,7 @@
             }
             .ck-editor__editable[role="textbox"] {
                 /* editing area */
-                min-height: 200px;
+                min-height: 300px;
             }
             .ck-content .image {
                 /* block images */
@@ -47,17 +49,20 @@
             }
         </style>
         <h1>ویرایشگر متن فارسی
-            <sub><small>
+            <sub>
+                <small>
             (
-                با خروجی اچ ات ام ال
+                + خروجی html
             )
-            </small></sub>
+            </small>
+        </sub>
         </h1>
         
         <div id="container">
             <div id="editor">
             </div>
         </div>
+        <a href="/" >back to homepage</a>
         <!--
             The "super-build" of CKEditor 5 served via CDN contains a large set of plugins and multiple editor types.
             See https://ckeditor.com/docs/ckeditor5/latest/installation/getting-started/quick-start.html#running-a-full-featured-editor-from-cdn
