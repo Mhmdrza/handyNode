@@ -79,6 +79,10 @@ app.get('/reset', (req, res) => {
     res.send('all files deleted');
 })
 
+app.get('/editor', (req, res) => {
+    res.sendFile('./editor.html', {root: __dirname })
+})
+
 app.listen(port, () => {
     console.log(`Handy app listening on port ${port}`)
 })
