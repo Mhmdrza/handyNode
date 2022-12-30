@@ -1,12 +1,33 @@
-
+require('dotenv').config({
+    path: `./.env`
+});
 const express = require('express');
 const fs = require('fs');
 const multer = require('multer');
+const AWS = require('aws-sdk/clients/s3.js');
+const fetch = require('node-fetch');
 const port = 8080;
 const upload = multer();
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 
+console.log({
+    endpoint: process.env.ENDPOINT,
+    accessKeyId: process.env.ACCESS_KEY,
+    secretAccessKey: process.env.SECRET_KEY,
+})
+
+const s3Client = new AWS({
+    endpoint: process.env.ENDPOINT,
+    accessKeyId: process.env.ACCESS_KEY,
+    secretAccessKey: process.env.SECRET_KEY,
+    region: "default",
+    s3ForcePathStyle: true,
+});
+
+
+
+const cache = Object.create(null);
 
 app.get('/', (req, res) => {
     res.sendFile('./index.html', {root: __dirname })
@@ -64,35 +85,50 @@ app.get('/editor', (req, res) => {
     res.sendFile('./editor.html', {root: __dirname })
 })
 
-app.get('/pages/:slug', (req, res) => {
-    const template = fs.readFileSync(`./template.html`).toString();
-    const body = fs.readFileSync(`./pages/${req.params.slug}.html`).toString();
+app.get('/pages/:slug', async (req, res) => {
+    const template = cache.template || (cache.template = fs.readFileSync(`./template.html`).toString());
+    let body = await fileReader(req.params.slug); 
     const page = template.replace('<!-- %%%BODY%%% -->', body)
     res.send(page);
 })
 
-app.get('/pages/:slug/edit', (req, res) => {
-    const editor = fs.readFileSync(`./editor.html`).toString();
-    let pageContent; 
-    try {
-        pageContent = fs.readFileSync(`./pages/${req.params.slug}.html`).toString();
-    } catch (error) {
-        pageContent = fs.readFileSync(`/tmp/${req.params.slug}.html`).toString();
-    }
+app.get('/pages/:slug/edit', async (req, res) => {
+    const editor = cache.editor || (cache.editor = fs.readFileSync(`./editor.html`).toString());
+    const pageContent = await fileReader(req.params.slug)
     const page = editor.replace(`/* initialData */`, `initialData: \`${pageContent}\`,`)
     res.send(page);
 })
 
-app.post('/pages/:slug/save', upload.none(), (req, res) => {
+app.post('/pages/:slug/save', upload.none(), async (req, res) => {
     const slug = req.params.slug;
-    try {
-        fs.writeFileSync(`./pages/${slug}.html`, req.body.content, 'utf8')
-    } catch (error) {
-        fs.writeFileSync(`/tmp/${slug}.html`, req.body.content, 'utf8')
-    }
+    const t = await fileWriter(slug, req.body.content);
     res.send(`page: /${slug} saved`);
 })
 
 app.listen(port, () => {
     console.log(`Handy app listening on port ${port}`)
 })
+
+async function fileReader (slug) {
+    const url = `https://cdn2.storage.iran.liara.space/pages/${slug}.html`;
+    return fetch(url).then(res => res.ok && res.text());
+    // let fileString;
+    // try {
+    //     fileString = fs.readFileSync(`./pages/${slug}.html`).toString();
+    // } catch (error) {
+    //     fileString = fs.readFileSync(`/tmp/${slug}.html`).toString();
+    // }
+    // return fileString;
+}
+
+async function fileWriter (slug, content) {
+    const params = {
+        Body: content, 
+        ACL: "public-read",
+        CacheControl: 'max-age=600; public',
+        ContentType: 'text/html',
+        Bucket: process.env.BUCKET_NAME, 
+        Key: `pages/${slug}.html`,
+    };
+    return s3Client.putObject(params).promise();
+}

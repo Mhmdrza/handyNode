@@ -70,8 +70,8 @@
             Most editors are not adopted to writing RTL content specially MD (markdown) and HTMl; but this one does :)
         </p>
         <h2>publish as a page</h2>
-        <form onsubmit="getter(event)">
-            path:<input name="slug" id="pathSlug" />
+        <form onsubmit="formHandler(event)" id="form">
+            path:<input name="slug" id="pathSlug" required />
             <button type="submit">save</button>
         </form>
         <br />
@@ -87,7 +87,7 @@
             <script src="https://cdn.ckeditor.com/ckeditor5/35.4.0/super-build/translations/fa.js"></script>
         -->
         <script>
-            let getter;
+            let formHandler;
             // This sample still does not showcase all CKEditor 5 features (!)
             // Visit https://ckeditor.com/docs/ckeditor5/latest/features/index.html to browse all the features.
             CKEDITOR.ClassicEditor.create(document.getElementById("editor"), {
@@ -231,14 +231,15 @@
                 ],
                 /* initialData */
             }).then((r) => {
-                const slug = window.location.pathname.split('/')[2];
+                const slug = window.location.pathname.split('/')[2] || '';
                 document.getElementById('pathSlug').value = slug;
-                getter = (e) => {
+
+                formHandler = (e) => {
                     e.preventDefault();
                     const data = r.data.get()
                     const fd = new FormData();
                     fd.set('content', data);
-                    fetch(`/pages/${slug}/save`, {
+                    fetch(`/pages/${slug || document.getElementById('pathSlug').value}/save`, {
                         method: 'POST',
                         body: fd
                     }).then(res => {
