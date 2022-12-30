@@ -6,6 +6,7 @@ const fs = require('fs');
 const multer = require('multer');
 const AWS = require('aws-sdk/clients/s3.js');
 const fetch = require('node-fetch');
+
 const port = 8080;
 const upload = multer();
 const app = express();
@@ -15,6 +16,7 @@ console.log({
     endpoint: process.env.ENDPOINT,
     accessKeyId: process.env.ACCESS_KEY,
     secretAccessKey: process.env.SECRET_KEY,
+    bucket: process.env.BUCKET_NAME
 })
 
 const s3Client = new AWS({
@@ -24,10 +26,18 @@ const s3Client = new AWS({
     region: "default",
     s3ForcePathStyle: true,
 });
-
-
-
+const CACHING_ENABLED = process.env.CACHING_ENABLED;
 const cache = Object.create(null);
+function getCache (key) {
+    return CACHING_ENABLED? cache[key]: false;
+}
+function setCache (key, value) {
+    return CACHING_ENABLED? cache[key] = value: value;
+}
+
+// ! -----------------------------------------
+// ! -----------------------------------------
+// ! -----------------------------------------
 
 app.get('/', (req, res) => {
     res.sendFile('./index.html', {root: __dirname })
@@ -87,21 +97,31 @@ app.get('/editor', (req, res) => {
 
 app.get('/pages/:slug', async (req, res) => {
     const template = cache.template || (cache.template = fs.readFileSync(`./template.html`).toString());
-    let body = await fileReader(req.params.slug); 
-    const page = template.replace('<!-- %%%BODY%%% -->', body)
-    res.send(page);
+    const slug = req.params.slug;
+    let body = await fileReader(slug); 
+    if (body.ok) {
+        const page = template.replace('<!-- %%%BODY%%% -->', body.txt)
+        res.send(page);
+    } else {
+        res.status(400).send(body.txt)
+    }
 })
 
 app.get('/pages/:slug/edit', async (req, res) => {
     const editor = cache.editor || (cache.editor = fs.readFileSync(`./editor.html`).toString());
-    const pageContent = await fileReader(req.params.slug)
-    const page = editor.replace(`/* initialData */`, `initialData: \`${pageContent}\`,`)
-    res.send(page);
+    const slug = req.params.slug;
+    const pageContent = await fileReader(slug);
+    if (pageContent.ok) {
+        const page = editor.replace(`/* initialData */`, `initialData: \`${pageContent.txt}\`,`)
+        res.send(page);
+    } else {
+        res.status(400).send(pageContent.txt)
+    }
 })
 
 app.post('/pages/:slug/save', upload.none(), async (req, res) => {
     const slug = req.params.slug;
-    const t = await fileWriter(slug, req.body.content);
+    await fileWriter(slug, req.body.content);
     res.send(`page: /${slug} saved`);
 })
 
@@ -110,15 +130,23 @@ app.listen(port, () => {
 })
 
 async function fileReader (slug) {
-    const url = `https://cdn2.storage.iran.liara.space/pages/${slug}.html`;
-    return fetch(url).then(res => res.ok && res.text());
-    // let fileString;
-    // try {
-    //     fileString = fs.readFileSync(`./pages/${slug}.html`).toString();
-    // } catch (error) {
-    //     fileString = fs.readFileSync(`/tmp/${slug}.html`).toString();
-    // }
-    // return fileString;
+    const url = `https://${process.env.BUCKET_NAME}.storage.iran.liara.space/pages/${slug}.html`;
+    const cacheResponse = getCache(slug);
+    if (cacheResponse) {
+        return { ok: true, txt: cacheResponse };
+    } else {
+        return fetch(url).then(async res => {
+            console.log('request', slug)
+            const txt = await res.text();
+            if (res.ok) {
+                setCache(slug, txt)
+            }
+            return {
+                txt,
+                ok: res.ok,
+            }
+        });
+    }
 }
 
 async function fileWriter (slug, content) {
@@ -130,5 +158,6 @@ async function fileWriter (slug, content) {
         Bucket: process.env.BUCKET_NAME, 
         Key: `pages/${slug}.html`,
     };
+    setCache(slug, null);
     return s3Client.putObject(params).promise();
 }

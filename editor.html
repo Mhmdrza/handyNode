@@ -242,8 +242,8 @@
                     fetch(`/pages/${slug || document.getElementById('pathSlug').value}/save`, {
                         method: 'POST',
                         body: fd
-                    }).then(res => {
-                        res.ok && alert('page saved')
+                    }).then(async res => {
+                        res.ok ? alert('page saved'):alert (await res.text())
                     })
                 };
             })
