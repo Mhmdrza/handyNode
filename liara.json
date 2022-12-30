@@ -1,5 +1,5 @@
 {
     "app": "handy",
-    "platform": "node",
+    "platform": "docker",
     "port": 8080
 }

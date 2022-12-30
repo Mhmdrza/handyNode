@@ -64,6 +64,35 @@ app.get('/editor', (req, res) => {
     res.sendFile('./editor.html', {root: __dirname })
 })
 
+app.get('/pages/:slug', (req, res) => {
+    const template = fs.readFileSync(`./template.html`).toString();
+    const body = fs.readFileSync(`./pages/${req.params.slug}.html`).toString();
+    const page = template.replace('<!-- %%%BODY%%% -->', body)
+    res.send(page);
+})
+
+app.get('/pages/:slug/edit', (req, res) => {
+    const editor = fs.readFileSync(`./editor.html`).toString();
+    let pageContent; 
+    try {
+        pageContent = fs.readFileSync(`./pages/${req.params.slug}.html`).toString();
+    } catch (error) {
+        pageContent = fs.readFileSync(`/tmp/${req.params.slug}.html`).toString();
+    }
+    const page = editor.replace(`/* initialData */`, `initialData: \`${pageContent}\`,`)
+    res.send(page);
+})
+
+app.post('/pages/:slug/save', upload.none(), (req, res) => {
+    const slug = req.params.slug;
+    try {
+        fs.writeFileSync(`./pages/${slug}.html`, req.body.content, 'utf8')
+    } catch (error) {
+        fs.writeFileSync(`/tmp/${slug}.html`, req.body.content, 'utf8')
+    }
+    res.send(`page: /${slug} saved`);
+})
+
 app.listen(port, () => {
     console.log(`Handy app listening on port ${port}`)
 })

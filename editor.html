@@ -67,8 +67,15 @@
             </div>
         </div>
         <p>
-            Most editors are not adopted to writing RTL content specially MD (markdown) and HTMl; but this one deosn't :)
+            Most editors are not adopted to writing RTL content specially MD (markdown) and HTMl; but this one does :)
         </p>
+        <h2>publish as a page</h2>
+        <form onsubmit="getter(event)">
+            path:<input name="slug" id="pathSlug" />
+            <button type="submit">save</button>
+        </form>
+        <br />
+        <a href="./" >view page</a>
         <a href="/" >back to homepage</a>
         <!--
             The "super-build" of CKEditor 5 served via CDN contains a large set of plugins and multiple editor types.
@@ -80,6 +87,7 @@
             <script src="https://cdn.ckeditor.com/ckeditor5/35.4.0/super-build/translations/fa.js"></script>
         -->
         <script>
+            let getter;
             // This sample still does not showcase all CKEditor 5 features (!)
             // Visit https://ckeditor.com/docs/ckeditor5/latest/features/index.html to browse all the features.
             CKEDITOR.ClassicEditor.create(document.getElementById("editor"), {
@@ -98,7 +106,7 @@
                         'alignment', '|',
                         'link', 'insertImage', 'blockQuote', 'insertTable', 'mediaEmbed', 'codeBlock', 'htmlEmbed', '|',
                         'specialCharacters', 'horizontalLine', 'pageBreak', '|',
-                        'textPartLanguage', '|',
+                        '|',
                         'sourceEditing'
                     ],
                     shouldNotGroupWhenFull: true
@@ -220,15 +228,23 @@
                     // Careful, with the Mathtype plugin CKEditor will not load when loading this sample
                     // from a local file system (file://) - load this site via HTTP server if you enable MathType
                     'MathType'
-                ]
+                ],
+                /* initialData */
             }).then((r) => {
-                console.log(r);
-                // r.set('data', 'khbjvghfcg')
-                // document.querySelector("#container > div.ck.ck-reset.ck-editor.ck-rounded-corners > div.ck.ck-editor__top.ck-reset_all > div > div.ck.ck-sticky-panel__content > div > div > div.ck.ck-dropdown.ck-font-family-dropdown > button").click();
-                // setTimeout(() => {
-                //     document.querySelector("#container > div.ck.ck-reset.ck-editor.ck-rounded-corners > div.ck.ck-editor__top.ck-reset_all > div > div.ck.ck-sticky-panel__content > div > div > div.ck.ck-dropdown.ck-font-family-dropdown > div > ul > li:nth-child(2) > button").click();
-                    
-                // }, 50);
+                const slug = window.location.pathname.split('/')[2];
+                document.getElementById('pathSlug').value = slug;
+                getter = (e) => {
+                    e.preventDefault();
+                    const data = r.data.get()
+                    const fd = new FormData();
+                    fd.set('content', data);
+                    fetch(`/pages/${slug}/save`, {
+                        method: 'POST',
+                        body: fd
+                    }).then(res => {
+                        res.ok && alert('page saved')
+                    })
+                };
             })
         </script>
     </body>
