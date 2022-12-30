@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <meta name="viewport" content="initial-scale=1,width=device-width">
         <script>
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 // dark mode
@@ -20,6 +21,8 @@
                 background-color: var(--black) !important;
                 color: var(--white);
                 font-family: Vazirmatn;
+                margin: 0;
+                word-break: break-all;
             }
             a {
                 color: var(--white) !important;
@@ -38,6 +41,10 @@
             &&&DOWNLOADS&&&
         </ul>
         <hr style='min-width: 300px; margin-top:20px' />
+        <b>Use case</b>
+        <p style=' padding:0 20px; word-break: normal;'>
+            File sharing between devices; Upload your file to server, then open this page on other device and download your file.
+        </p>
         <a href="/" >back to homepage</a>
     </body>
 </html>
