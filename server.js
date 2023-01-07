@@ -59,7 +59,7 @@ app.get('/', async (req, res) => {
 app.get('/file', (req, res) => {
     const downloads = fs.readdirSync('/tmp').map(fileName => `<li>
         <a href='/download/${fileName}' download>${fileName}</a>
-        <a href='/delete/${fileName}'> x</a>
+        <a href='/delete-file/${fileName}'> x</a>
     </li>`).join('');
     const filePage = htmlRenderer(null, './file.html');
     res.send(filePage.replace('&&&DOWNLOADS&&&', downloads))
@@ -87,7 +87,7 @@ app.get('/download/:path', (req, res) => {
     }
 })
 
-app.get('/delete/:path', (req, res) => {
+app.get('/delete-file/:path', (req, res) => {
     const { path } = req.params;
     if (!path) {
         res.status(400).json({ name: 'wrong' })
