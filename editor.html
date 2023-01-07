@@ -208,13 +208,13 @@
             const data = CK.data.get();
             const fd = new FormData();
             fd.set('content', data);
-            fetch(`/${path}/save`, {
+            fetch(`/save/${path}`, {
                 method: 'POST',
                 body: fd
             }).then(async res => {
                 if(res.ok) {
                     setSubmitted(true);
-                    history.pushState(null, null, `/${path}/edit`)
+                    history.pushState(null, null, `/edit/${path}`)
                     setTimeout(() => {
                         setSubmitted(false)
                     }, 10_000);

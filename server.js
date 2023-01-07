@@ -51,7 +51,7 @@ const editor = htmlRenderer(null, `./editor.html`);
 app.get('/', async (req, res) => {
     const pages = (await listObjects()).map(s3Obj => `<li style="">
         <a href='${s3Obj.Key.replace('.html','')}' >${s3Obj.Key}</a>
-        <a href='${s3Obj.Key.replace('.html','')}/delete'>x</a>
+        <a href='/delete/${s3Obj.Key.replace('.html','')}'>x</a>
     </li>`).join('');
     res.send(htmlRenderer( null, './home.html').replace('<!-- %%%PAGES%%% -->', pages))
 })
@@ -108,7 +108,35 @@ app.get('/editor', (req, res) => {
     res.send(editor)
 })
 
-app.get(/\/(.+)$/, async (req, res) => {
+app.get(/\/delete\/(.+)$/, async (req, res) => {
+    let slug = req.params[0];
+    if(slug.endsWith('/')) slug = slug.slice(0, slug.length - 1)
+    console.log({a:1, slug})
+    await deleteObject(`${slug}`); 
+    res.redirect('back');
+})
+
+app.get(/\/edit\/(.+)$/, async (req, res) => {
+    let slug = req.params[0];
+    if(slug.endsWith('/')) slug = slug.slice(0, slug.length - 1)
+    console.log({a:2, slug})
+    const pageContent = await fileReader(slug);
+    if (pageContent.ok) {
+        const page = editor.replace(`/* initialData */`, `initialData: \`${pageContent.txt}\`,`)
+        res.send(page);
+    } else {
+        res.status(400).send(pageContent.txt)
+    }
+})
+
+app.post(/\save\/(.+)$/, upload.none(), async (req, res) => {
+    let slug = req.params[0];
+    if(slug.endsWith('/')) slug = slug.slice(0, slug.length - 1)
+    await fileWriter(slug, req.body.content);
+    res.send(`page: /${slug} saved`);
+})
+
+app.get(/\/([^\/]+)$/, async (req, res) => {
     let slug = req.params[0];
     if(slug.endsWith('/')) slug = slug.slice(0, slug.length - 1)
     let body = await fileReader(slug); 
@@ -119,31 +147,8 @@ app.get(/\/(.+)$/, async (req, res) => {
     }
 })
 
-app.get(/\/(.+)\/delete\/?$/, async (req, res) => {
-    const slug = req.params[0];
-    await deleteObject(`${slug}`); 
-    res.redirect('back');
-})
-
-app.get(/\/(.+)\/edit\/?$/, async (req, res) => {
-    const slug = req.params[0];
-    const pageContent = await fileReader(slug);
-    if (pageContent.ok) {
-        const page = editor.replace(`/* initialData */`, `initialData: \`${pageContent.txt}\`,`)
-        res.send(page);
-    } else {
-        res.status(400).send(pageContent.txt)
-    }
-})
-
-app.post(/\/(.+)\/save\/?$/, upload.none(), async (req, res) => {
-    const slug = req.params[0];
-    await fileWriter(slug, req.body.content);
-    res.send(`page: /${slug} saved`);
-})
-
 async function fileReader (slug) {
-    console.log({slug})
+    console.log('fileReader', {slug})
     const url = `https://${process.env.BUCKET_NAME}.storage.iran.liara.space/${slug}`;
     const cacheResponse = getCache(slug);
     if (cacheResponse) {
@@ -164,7 +169,7 @@ async function fileReader (slug) {
 }
 
 async function fileWriter (slug, content) {
-    console.log({slug, content})
+    console.log('fileWriter', {slug, content})
     setCache(slug, null);
     return s3Client.putObject({
         Body: content, 
