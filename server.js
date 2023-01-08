@@ -26,9 +26,7 @@ const s3Client = new AWS({
     region: "default",
     s3ForcePathStyle: true,
 });
-const isProduction = process.env.NODE_ENV == 'production'
-const DEV_CACHE = isProduction;
-const OSS_CACHING_ENABLED = 0 && process.env.CACHING_ENABLED;
+const OSS_CACHING_ENABLED = false && process.env.CACHING_ENABLED;
 const cache = Object.create(null);
 function getCache (key) {
     return OSS_CACHING_ENABLED? cache[key]: false;
@@ -37,9 +35,9 @@ function setCache (key, value) {
     return OSS_CACHING_ENABLED? cache[key] = value: value;
 }
 
-const template = (DEV_CACHE && cache.template) || (cache.template = fs.readFileSync(`./template.html`).toString());
+const template = getCache('template') || setCache('template', fs.readFileSync(`./template.html`).toString());
 function htmlRenderer (rawHtml = '', fileSystemPath = '') {
-    return template.replace('<!-- %%%BODY%%% -->', rawHtml || fs.readFileSync(fileSystemPath).toString());
+    return template.replace('<!-- %%%BODY%%% -->', rawHtml || getCache(fileSystemPath) || setCache(fileSystemPath, fs.readFileSync(fileSystemPath).toString()));
 };
 const editor = htmlRenderer(null, `./editor.html`);
 
