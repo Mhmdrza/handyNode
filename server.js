@@ -134,6 +134,31 @@ app.post(/\save\/(.+)$/, upload.none(), async (req, res) => {
     res.send(`page: /${slug} saved`);
 })
 
+app.get('/downlink', async (req, _res) => {
+    const url = (req.query.url);
+    let urlProcessed = url.split('/');
+    const fileName = Math.random().toString().slice(2, 8) + decodeURIComponent(urlProcessed[urlProcessed.length-1] || urlProcessed[urlProcessed.length-2]);
+    const res = await fetch(url);
+    const fileStream = fs.createWriteStream('/tmp/' + fileName);
+    await new Promise((resolve, reject) => {
+        res.body.pipe(fileStream);
+        res.body.on("error", reject);
+        fileStream.on("finish", resolve);
+    });
+    _res.send(`file: <a href='/download/${fileName}' >${fileName}</a> saved to /tmp`);
+})
+
+app.get('/uploadToS3', async (req, _res) => {
+    const path = (req.query.path);
+    if (!path) {
+        res.status(400).json({ name: 'wrong' })
+    } else {
+        const file = fs.createReadStream(`/tmp/${path}`);
+        await fileWriter(path.replace('835304', ''), file);
+        _res.send(`file: ${path} saved to cdn`);
+    }
+})
+
 app.get(/\/([^\/]+)$/, async (req, res) => {
     let slug = req.params[0];
     if(slug.endsWith('/')) slug = slug.slice(0, slug.length - 1)
